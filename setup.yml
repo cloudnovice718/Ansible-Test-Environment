@@ -1,0 +1,83 @@
+---
+# Setup file for Fedora Ansible practice environment
+
+- name: set up nodes
+  hosts: all
+  become: true
+  gather_facts: true
+  ignore_errors: true
+  remote_user: vagrant
+
+  tasks:
+
+    - name: configure control node          
+      block:
+        - name: generate ssh key
+          openssh_keypair:
+            path: /vagrant/id_rsa
+            force: yes
+            type: rsa
+            owner: vagrant
+            group: vagrant
+        - name: copy ansible config file to home directory
+          copy:
+            src: /vagrant/ansible.cfg
+            dest: /home/vagrant
+      delegate_to: localhost
+
+    - name: create the 'ansible' user
+      user:
+        name: ansible
+        state: present
+        shell: /bin/bash
+        password: "{{ 'ansible' | password_hash('sha256') }}"
+        groups: wheel
+        append: yes
+        update_password: on_create
+
+    - name: provide passwordless sudo access to 'ansible' user
+      lineinfile:
+        path: /etc/sudoers
+        line: "ansible ALL=(ALL) NOPASSWD: ALL"
+        state: present
+        validate: visudo -c -f /etc/sudoers %s
+
+    - name: change hostnames
+      include_tasks: /vagrant/hostnames.yml
+
+    - name: set up hosts file
+      template:
+        src: /vagrant/hosts.j2
+        dest: /etc/hosts
+
+    - name: copy ansible config file to 'ansible' user's home folder
+      copy:
+        src: /vagrant/ansible.cfg
+        dest: /home/ansible
+
+    - name: disable selinux
+      selinux: 
+        state: disabled
+
+    - name: distribute ssh keys
+      authorized_key:
+        user: ansible
+        key: "{{ lookup('file', '/vagrant/id_rsa.pub') }}"
+        state: present 
+
+    - name: create welcome message
+      copy:
+        dest: /etc/motd
+        content: |
+           Welcome to the Ansible VM environment. Login information is below
+           Username: 'ansible' (e.g. su - ansible)
+           Password: 'ansible' 
+           Run 'sudo -i' to use the root account
+
+    - include_tasks: /vagrant/vminfo.yml
+
+
+
+
+
+

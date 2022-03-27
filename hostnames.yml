@@ -1,0 +1,49 @@
+---
+- name: change hostnames on all nodes
+  when: inventory_hostname is defined
+  become: true
+
+  block:
+    - name: change hostname for control node
+      hostname:
+        name: control.example.com
+        use: systemd
+      when: inventory_hostname == 'control.example.com'
+
+
+    - name: change hostname for node1
+      hostname:
+        name: node1.example.com
+        use: systemd
+      when: inventory_hostname == 'node1.example.com'
+
+
+    - name: change hostname for node2
+      hostname:
+        name: node2.example.com
+        use: systemd
+      when: inventory_hostname == 'node2.example.com'
+
+
+    - name: change hostname for node3
+      hostname:
+        name: node3.example.com
+        use: systemd
+      when: inventory_hostname == 'node3.example.com'
+
+# Had issues with the 'hostname' module failing at runtime
+# so I added a rescue block to perform the host name changes 
+# the old fashioned way using the 'hostnamectl set-hostname' command
+# in the event that the above tasks fails.
+  rescue:
+    - command: hostnamectl set-hostname control.example.com
+      when: inventory_hostname == 'control.example.com'
+
+    - command: hostnamectl set-hostname node1.example.com
+      when: inventory_hostname == 'node1.example.com'
+
+    - command: hostnamectl set-hostname node2.example.com
+      when: inventory_hostname == 'node2.example.com'
+
+    - command: hostnamectl set-hostname node3.example.com
+      when: inventory_hostname == 'node3.example.com' 

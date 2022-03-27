@@ -1,0 +1,5 @@
+---
+- debug:
+    msg: Welcome to the Ansible VM Enviroment. Enter 'vagrant ssh control' to access the VM
+  when: inventory_hostname == 'control.example.com'
+
